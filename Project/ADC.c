@@ -1,5 +1,6 @@
 #include "stm32f4xx_gpio.h"
 #include "CAN.h"
+#include "pedalIntegrity.h"
 
 //#define BUFFERSIZE 448  // Setter opp st¯rrelsen pÂ ADC array.
 #define BUFFERSIZE  (4+4)*7
@@ -152,8 +153,6 @@ void InitADC(void){
 	TIM_Cmd(TIM2, ENABLE);
 }
 
-uint8_t test = 0;
-
 /* DMA Interrupt */
 void DMA2_Stream0_IRQHandler(void)
 { 
@@ -161,6 +160,7 @@ void DMA2_Stream0_IRQHandler(void)
 	if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_TCIF0)){
 		DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);
 		
+		// Reorder ADC-values from DMA-buffer
 		rawSensorValues[0] = ADCDualConvertedValues[6];
 		rawSensorValues[1] = ADCDualConvertedValues[0];
 		rawSensorValues[2] = ADCDualConvertedValues[2];
@@ -169,16 +169,7 @@ void DMA2_Stream0_IRQHandler(void)
 		rawSensorValues[5] = ADCDualConvertedValues[3];
 		rawSensorValues[6] = ADCDualConvertedValues[5];
 		
-		
-		uint8_t i;
-		uint8_t data[8];
-		for(i = 0; i<7; i++){
-			data[i] = (uint8_t)(rawSensorValues[i] >> 7);
-		}
-		
-		CANTx(0x100, 7, data);
-		
-		//movingAverage(ADCDualConvertedValues);
+		processPedals(rawSensorValues);
 	}
 }
 

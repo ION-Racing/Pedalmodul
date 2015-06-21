@@ -4,6 +4,10 @@
 #include "NVIC.h"
 #include "CAN.h"
 #include "ADC.h"
+#include "pedalIntegrity.h"
+
+#define ID_UNIQUE_ADDRESS		0x1FFF7A10
+#define TM_ID_GetUnique32(x)	((x >= 0 && x < 3) ? (*(uint32_t *) (ID_UNIQUE_ADDRESS + 4 * (x))) : 0)
 
 static void Delay(__IO uint32_t);
 CanTxMsg msgTx;	  
@@ -11,6 +15,14 @@ CanRxMsg msgRx;
 			
 int main(void)
 {
+	// Check that you flashed to the correct microcontroller
+	uint32_t chipId1 = TM_ID_GetUnique32(0);
+	uint32_t chipId2 = TM_ID_GetUnique32(1);
+	uint32_t chipId3 = TM_ID_GetUnique32(2);
+	if(chipId1 != 0x00290044 || chipId2 != 0x30345117 || chipId3 != 0x37333838){
+		while(1);
+	}
+	
 	// Configure the system clock.
 	// The system clock is 168Mhz.
 	RCC_HSEConfig(RCC_HSE_ON); // ENABLE HSE (HSE = 8Mhz)
@@ -23,14 +35,13 @@ int main(void)
 	// Initialize peripheral modules
 	InitGPIO();
 	InitNVIC();
+	InitPedalIntegrity();
 	InitADC();
 	InitCAN();
 //	MCO_Config(); // Clock output
 	
 	
 	
-	//Enable a LED to show on status.
-	GPIOC->ODR |= GPIO_Pin_8;
 	
 	/* Main code */
 	while(1)
