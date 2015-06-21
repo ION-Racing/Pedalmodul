@@ -611,6 +611,11 @@
               <FileType>1</FileType>
               <FilePath>.\GPIO.c</FilePath>
             </File>
+            <File>
+              <FileName>MCO.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\MCO.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

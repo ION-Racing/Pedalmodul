@@ -8,6 +8,7 @@
  *					: HSE, PLL, SYSCLK, PLLI2S on PC9.
  * The prescaler can be from 1-5. 
  * The output frequency must not exceed 100Mhz.
+ * Only for testing the clocks. Not ordinarly used.
  */
 void MCO_Config(void){
 	
@@ -40,12 +41,4 @@ void MCO_Config(void){
 	
 	//RCC_MCO1Config(RCC_MCO1Source_HSE, RCC_MCO1Div_1);
 	RCC_MCO2Config(RCC_MCO2Source_SYSCLK, RCC_MCO2Div_5);
-	
-	
-	/* Does not work.
-	//MCO 1 config
-	RCC->CFGR &= ~(3<<29); // Output Sysclk on MC02.
-	RCC->CFGR |= (7<<26);  // Set MC02 prescaler = 5.
-*/
-
 }
