@@ -3,7 +3,7 @@
 #include "pedalIntegrity.h"
 
 //#define BUFFERSIZE 448  // Setter opp st¯rrelsen pÂ ADC array.
-#define BUFFERSIZE  (4+4)*7
+#define BUFFERSIZE  (4+4)*8
 
 // ADC-values
 __IO uint16_t ADCDualConvertedValues[BUFFERSIZE];
@@ -96,7 +96,7 @@ void InitADC(void){
 	/* ADC Common Init */
 	ADC_CommonInitTypeDef ADC_CommonInitStructure;
 	ADC_CommonInitStructure.ADC_Mode 				= ADC_DualMode_RegSimult; //Sampler to og to signaler samtidig
-	ADC_CommonInitStructure.ADC_Prescaler 			= ADC_Prescaler_Div2;
+	ADC_CommonInitStructure.ADC_Prescaler		= ADC_Prescaler_Div2;
 	ADC_CommonInitStructure.ADC_DMAAccessMode 		= ADC_DMAAccessMode_1;
 	ADC_CommonInitStructure.ADC_TwoSamplingDelay	= ADC_TwoSamplingDelay_5Cycles;
 	ADC_CommonInit(&ADC_CommonInitStructure);
