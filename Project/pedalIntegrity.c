@@ -18,8 +18,9 @@ uint16_t pedalCalibrationHigh[7];
 uint32_t flashStartAddress = 0x080E0000; //starting from 896KB, the beginning of last sector
 
 void saveCalibration(void);
+void sendCalibration(void);
 
-uint8_t processPedalPair(uint8_t sensorIdx, uint16_t sensor, uint16_t inverted);
+uint8_t processPedalPair(uint8_t pair, uint16_t sensorMin, uint16_t sensor, uint16_t sensorMax, uint16_t invertedMin, uint16_t inverted, uint16_t invertedMax);
 
 uint16_t pedalValues[3];
 
@@ -28,13 +29,15 @@ void InitPedalIntegrity(void)
 	uint8_t i;
 	uint16_t magic = *(int16_t *)(flashStartAddress);
 		
-	if(magic == 0xEF21)
+	if(magic == 0xEF22)
 	{
 		// Load saved calibration
 		for(i=0; i<7; i++){
 			pedalCalibrationLow[i]  = *(int16_t *)(flashStartAddress + (1 + i*2) * 32);
 			pedalCalibrationHigh[i] = *(int16_t *)(flashStartAddress + (1 + i*2 + 1) * 32);
 		}
+		
+		sendCalibration();
 	}
 	else {
 		// Start new calibration
@@ -64,6 +67,23 @@ void saveCalibration(void){
 	}
 
 	FLASH_Lock();
+
+	sendCalibration();
+}
+
+void sendCalibration(void){
+	
+	uint8_t data[8];
+	for(uint8_t i = 0; i<2; i++){
+		data[0 + i*4] = (uint8_t)(pedalCalibrationLow[1 + i] >> 8);
+		data[1 + i*4] = (uint8_t)(pedalCalibrationLow[1 + i] & 0xFF);
+		
+		data[2 + i*4] = (uint8_t)(pedalCalibrationHigh[1 + i] >> 8);
+		data[3 + i*4] = (uint8_t)(pedalCalibrationHigh[1 + i] & 0xFF);
+	}
+	
+	CANTx(0x0FF, 8, data);
+	
 }
 
 uint32_t calibrationHits = 1,
@@ -83,7 +103,7 @@ void processPedals(uint16_t rawSensorValues[7]){
 	if(calibrating){
 		
 		for(i=0; i<7; i++){
-			uint16_t val = rawSensorValues[1];
+			uint16_t val = rawSensorValues[i];
 		
 			calibrationSamples++;
 			
@@ -123,28 +143,37 @@ void processPedals(uint16_t rawSensorValues[7]){
 	}
 	
 	// Check internal sensors for implausibility
-	for(i=0; i<1; i++){ // TODO: Integrity check all pedals
-		if(processPedalPair(i, rawSensorValues[0 + i*2 + 1], rawSensorValues[1 + i*2 + 1]) != PEDAL_STATE_OK){
+	for(i=0; i<2; i++){ // TODO: Integrity check all pedals
+		
+		uint8_t sensorIdx   = 0 + i*2 + 1;
+		uint8_t invertedIdx = 1 + i*2 + 1;
+		
+		if(processPedalPair(i, pedalCalibrationLow[sensorIdx], rawSensorValues[sensorIdx], pedalCalibrationHigh[sensorIdx],
+							   pedalCalibrationLow[invertedIdx], rawSensorValues[invertedIdx], pedalCalibrationHigh[invertedIdx]) != PEDAL_STATE_OK){
 			reportPedalImplausability(i);
-			break;
+			//break;
 		}
 		else {
 			
-			uint16_t throttle = pedalValues[0];
+			uint16_t throttle1 = pedalValues[0];
+			uint16_t throttle2 = pedalValues[1];
 			
-			uint8_t data[2];
-			data[0] = throttle >> 8;
-			data[1] = throttle & 0xFF;
-			CANTx(0x100, 2, data);
+			uint8_t data[4];
+			data[0] = throttle1 >> 8;
+			data[1] = throttle1 & 0xFF;
+			data[2] = throttle2 >> 8;
+			data[3] = throttle2 & 0xFF;
+			//CANTx(0x100, 4, data);
 			
 		}
 	}
 	
 	return;
+	
 	uint8_t data[8];
 	for(i = 0; i<3; i++){
-		data[0 + i*2] = (uint8_t)(rawSensorValues[i] >> 8);
-		data[1 + i*2] = (uint8_t)(rawSensorValues[i] & 0xFF);
+		data[0 + i*2] = (uint8_t)(rawSensorValues[1+i*2] >> 8);
+		data[1 + i*2] = (uint8_t)(rawSensorValues[1+i*2] & 0xFF);
 		
 		//data[i] = (uint8_t)(rawSensorValues[i] >> 7);
 	}
@@ -153,40 +182,41 @@ void processPedals(uint16_t rawSensorValues[7]){
 		
 }
 
-uint8_t processPedalPair(uint8_t sensorIdx, uint16_t sensor, uint16_t inverted){
-
-	sensorIdx = sensorIdx * 2 + 1;
+uint8_t processPedalPair(uint8_t pair, uint16_t sensorMin, uint16_t sensor, uint16_t sensorMax, uint16_t invertedMin, uint16_t inverted, uint16_t invertedMax){
 	
-	uint16_t range 			= pedalCalibrationHigh[sensorIdx] - pedalCalibrationLow[sensorIdx];
-	uint16_t rangeInverted 	= pedalCalibrationHigh[sensorIdx + 1] - pedalCalibrationLow[sensorIdx + 1];
-	
-	inverted = pedalCalibrationHigh[sensorIdx + 1] - inverted; // uninvert inverted signal
+	uint16_t range 			= sensorMax - sensorMin;
+	uint16_t rangeInverted 	= invertedMax - invertedMin;
 	
 	// Normalize
-	float a = (float)(sensor - pedalCalibrationLow[sensorIdx]) / (float)range;
-	float b = (float)(inverted - pedalCalibrationLow[sensorIdx + 1]) / (float)rangeInverted;
+	float a = (float)(sensor - sensorMin) / (float)range;
+	float b = (float)((invertedMax - invertedMin) - (inverted - invertedMin)) / (float)rangeInverted;
 	
-	float diff = fabs(a - b) / 1.0;
+	uint16_t aADC = (uint16_t)(a * 0xFFF);
+	uint16_t bADC = (uint16_t)(b * 0xFFF);
 	
-	/*uint8_t data[8];
-	data[0] = (uint16_t)(a * 0xFFF) >> 8;
-	data[1] = (uint16_t)(a * 0xFFF) & 0xFF;
-	data[2] = inverted >> 8;
-	data[3] = inverted & 0xFF;
-	data[4] = adcDiff >> 8;
+	float diff = fabs(a - b);
+	
+	if(pair == 1){
+	uint8_t data[8];
+	data[0] = aADC >> 8;
+	data[1] = aADC & 0xFF;
+	data[2] = bADC >> 8;
+	data[3] = bADC & 0xFF;
+	/*data[4] = adcDiff >> 8;
 	data[5] = adcDiff & 0xFF;
 	data[6] = range >> 8;
 	data[7] = range & 0xFF;
 	uint16_t flash = *(int16_t *)(flashStartAddress);
 	data[6] = flash >> 8;
-	data[7] = flash & 0xFF;
-	CANTx(0x100, 8, data);*/
+	data[7] = flash & 0xFF;*/
+	CANTx(0x100, 4, data);
+	}
 	
 	if(diff > 0.1f || a < -0.1f || a > 1.1f || b < -0.1f || b > 1.1f){ // 10% differanse
 		return PEDAL_STATE_IMPLAUSIBLE;
 	}
 	
-	pedalValues[0] = (uint16_t)(0xFFF * a);
+	pedalValues[pair] = (uint16_t)(0xFFF * a);
 	
 	return PEDAL_STATE_OK;
 }

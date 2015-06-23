@@ -3,7 +3,8 @@
 #include "pedalIntegrity.h"
 
 //#define BUFFERSIZE 448  // Setter opp st¯rrelsen pÂ ADC array.
-#define BUFFERSIZE  (4+4)*7
+#define	MOVING_AVERAGE_LENGTH	12
+#define BUFFERSIZE  (4+4) * MOVING_AVERAGE_LENGTH
 
 // ADC-values
 __IO uint16_t ADCDualConvertedValues[BUFFERSIZE];
@@ -115,15 +116,15 @@ void InitADC(void){
 	ADC_Init(ADC2, &ADC_InitStructure); // Mirror on ADC2
 
 	/* ADC1 regular channel 11 configuration */
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 1, ADC_SampleTime_480Cycles); // PA2
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_480Cycles); // PA1	
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 2, ADC_SampleTime_480Cycles); // PA3
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_4, 3, ADC_SampleTime_480Cycles); // PA4
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 4, ADC_SampleTime_480Cycles); // PA1
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_5, 3, ADC_SampleTime_480Cycles); // PA5
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_7, 4, ADC_SampleTime_480Cycles); // PA7
 	
 	/* ADC2 regular channel 12 configuration */
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_5, 1, ADC_SampleTime_480Cycles); // PA5
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_6, 2, ADC_SampleTime_480Cycles); // PA6
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_7, 3, ADC_SampleTime_480Cycles); // PA7
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_2, 1, ADC_SampleTime_480Cycles); // PA2
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_4, 2, ADC_SampleTime_480Cycles); // PA4	
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_6, 3, ADC_SampleTime_480Cycles); // PA6	
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_8, 4, ADC_SampleTime_480Cycles); // PB0 (for equal lengths on both channels)
 
 	/* Enable DMA request after last transfer (Multi-ADC mode)  */
@@ -160,15 +161,19 @@ void DMA2_Stream0_IRQHandler(void)
 	if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_TCIF0)){
 		DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);
 		
-		// Reorder ADC-values from DMA-buffer
-		rawSensorValues[0] = ADCDualConvertedValues[6];
-		rawSensorValues[1] = ADCDualConvertedValues[0];
-		rawSensorValues[2] = ADCDualConvertedValues[2];
-		rawSensorValues[3] = ADCDualConvertedValues[4];
-		rawSensorValues[4] = ADCDualConvertedValues[1];
-		rawSensorValues[5] = ADCDualConvertedValues[3];
-		rawSensorValues[6] = ADCDualConvertedValues[5];
+		// Apply filtering
+		uint32_t sampleSum[7];
+		for(uint8_t sensor = 0; sensor<7; sensor++){
+			sampleSum[sensor] = 0;
+			for(uint8_t i = 0; i<MOVING_AVERAGE_LENGTH; i++){
+				sampleSum[sensor] += ADCDualConvertedValues[sensor + 8*i];
+			}
+			
+			uint16_t result = sampleSum[sensor] / MOVING_AVERAGE_LENGTH;
+			rawSensorValues[sensor] = result;
+		}
 		
+		// Process measured values
 		processPedals(rawSensorValues);
 	}
 }
