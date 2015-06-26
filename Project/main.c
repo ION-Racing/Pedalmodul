@@ -10,8 +10,11 @@
 #define TM_ID_GetUnique32(x)	((x >= 0 && x < 3) ? (*(uint32_t *) (ID_UNIQUE_ADDRESS + 4 * (x))) : 0)
 
 static void Delay(__IO uint32_t);
-CanTxMsg msgTx;	  
-CanRxMsg msgRx;
+CanTxMsg msgTx;
+			
+void delay(__IO uint32_t nCount){
+  while(nCount--){}
+}
 			
 int main(void)
 {
@@ -46,7 +49,7 @@ int main(void)
 	/* Main code */
 	while(1)
 	{
-		Delay(0xFF);
+		delay(0xFF);
 		/*
 		if(CAN_GetITStatus(CAN1,CAN_IT_FMP0) == SET){
 		
@@ -59,14 +62,3 @@ int main(void)
 	}
 }
 
-
-
-//--------------------------------------------------------------------
-/**
-  * @brief  Delay
-  * @param  None
-  * @retval None
-  */
-void Delay(__IO uint32_t nCount){
-  while(nCount--){}
-}

@@ -1,17 +1,10 @@
 #include "stm32f4xx_CAN.h"
 #include "stm32f4xx_gpio.h"
-#include "Periph_header.h"
+#include "ION_CAN.h"
+#include "pedalIntegrity.h"
 
 #define CAN_RX_PIN GPIO_Pin_11
 #define CAN_TX_PIN GPIO_Pin_12
-
-/* PRIVATE functions */
-CAN_InitTypeDef        CAN_InitStructure;
-CAN_FilterInitTypeDef  CAN_FilterInitStructure;
-CanTxMsg TxMessage; //Used for testing
-
-
-extern CanRxMsg msgRx;
 
 void InitCAN(void)
 {
@@ -38,6 +31,7 @@ void InitCAN(void)
 	CAN_DeInit(CAN1);
 
 	/* CAN cell init */
+	CAN_InitTypeDef CAN_InitStructure;
 	CAN_InitStructure.CAN_TTCM = DISABLE;
 	CAN_InitStructure.CAN_ABOM = DISABLE;
 	CAN_InitStructure.CAN_AWUM = DISABLE;
@@ -54,6 +48,7 @@ void InitCAN(void)
 	CAN_Init(CAN1, &CAN_InitStructure);
 
 	/* CAN filter init */
+	CAN_FilterInitTypeDef CAN_FilterInitStructure;
 	CAN_FilterInitStructure.CAN_FilterNumber = 0;
 	CAN_FilterInitStructure.CAN_FilterMode = CAN_FilterMode_IdMask;
 	CAN_FilterInitStructure.CAN_FilterScale = CAN_FilterScale_32bit;
@@ -65,18 +60,8 @@ void InitCAN(void)
 	CAN_FilterInitStructure.CAN_FilterActivation = ENABLE;
 	CAN_FilterInit(&CAN_FilterInitStructure);
 
-	/* Transmit Structure preparation */
-	TxMessage.StdId = 0x321;
-	TxMessage.ExtId = 0x01;
-	TxMessage.RTR = CAN_RTR_DATA;
-	TxMessage.IDE = CAN_ID_STD;
-	TxMessage.DLC = 1;
-
 	/* Enable FIFO 0 message pending Interrupt */
 	CAN_ITConfig(CAN1, CAN_IT_FMP0, ENABLE);
-	
-	
-	Init_RxMes(&msgRx);
 }
 
 /* CAN Transmit */
@@ -99,30 +84,41 @@ uint8_t CANTx(uint32_t address, uint8_t length, uint8_t data[8]) {
 
 /* CAN Receive */
 
-void Init_RxMes(CanRxMsg *RxMessage)
-{
-	uint8_t ubCounter = 0;
+CanRxMsg msgRx;
 
-	RxMessage->StdId = 0x00;
-	RxMessage->ExtId = 0x00;
-	RxMessage->IDE = CAN_ID_STD;
-	RxMessage->DLC = 0;
-	RxMessage->FMI = 0;
-	for (ubCounter = 0; ubCounter < 8; ubCounter++)
+void CAN1_RX0_IRQHandler (void){
+	if(CAN1->RF0R & CAN_RF0R_FMP0)
 	{
-		RxMessage->Data[ubCounter] = 0x00;
-	}
-}
-
-// CAN RX Interrupt
-void CAN1_RX0_IRQHandler (void)
-{
-	if (CAN1->RF0R & CAN_RF0R_FMP0){
-		
-		/* Temp action for testing CAN */
-		CAN_Receive(CAN1,CAN_FIFO0,&msgRx);
+		CAN_Receive(CAN1, CAN_FIFO0, &msgRx);
 
 		if(msgRx.StdId == 0x1) GPIOB->ODR ^= GPIO_Pin_14;
+		
+		else if(msgRx.StdId == CAN_MSG_PEDAL_CALIBRATE){
+			
+			// Start calibration
+			switch(msgRx.Data[0]){
+				case 0:
+					calibrateSensors(SENSOR_CALIBRATE_LOW | SENSOR_CALIBRATE_TORQUE | SENSOR_CALIBRATE_BRAKE);
+					break;
+				case 1:
+					calibrateSensors(SENSOR_CALIBRATE_HIGH | SENSOR_CALIBRATE_TORQUE);
+					break;
+				case 2:
+					calibrateSensors(SENSOR_CALIBRATE_HIGH | SENSOR_CALIBRATE_BRAKE);
+					break;
+				case 3:
+					calibrateSensors(SENSOR_CALIBRATE_LOW | SENSOR_CALIBRATE_STEERING);
+					break;
+				case 4:
+					calibrateSensors(SENSOR_CALIBRATE_CENTER | SENSOR_CALIBRATE_STEERING);
+					break;
+				case 5:
+					calibrateSensors(SENSOR_CALIBRATE_HIGH | SENSOR_CALIBRATE_STEERING);
+					break;
+
+			}
+			
+		}
 
 	}
 }
