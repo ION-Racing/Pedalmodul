@@ -21,3 +21,11 @@ void reportPedalImplausability(uint8_t pedalIdx);
 #define	STEERING_CALIBRATE_MAX		0x401
 
 void calibrateSensors(uint16_t sensors);
+/*
+Sensors bits:
+0-6		select sensor
+7		don't care
+8		low
+9		center
+10		high
+*/

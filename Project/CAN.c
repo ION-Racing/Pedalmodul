@@ -93,7 +93,7 @@ void CAN1_RX0_IRQHandler (void){
 
 		if(msgRx.StdId == 0x1) GPIOB->ODR ^= GPIO_Pin_14;
 		
-		else if(msgRx.StdId == CAN_MSG_PEDAL_CALIBRATE){
+		else if(msgRx.StdId == CAN_MSG_PEDALS_CALIBRATE){
 			
 			// Start calibration
 			switch(msgRx.Data[0]){

@@ -153,6 +153,14 @@ void processPedals(uint16_t rawSensorValues[7]){
 			
 			LED_SetState(LED_GREEN, DISABLE);
 			
+			// TODO: Verify calibration
+			
+			// Send calibration completed
+			uint8_t data[1];
+			data[0] = 0;
+			CANTx(CAN_MSG_PEDALS_CALIBRATION_COMPLETE, 1, data);
+			
+			// Save calibration
 			LED_SetState(LED_BLUE, ENABLE);
 			saveCalibration();
 			LED_SetState(LED_BLUE, DISABLE);
@@ -191,16 +199,16 @@ void processPedals(uint16_t rawSensorValues[7]){
 	uint16_t brake 	   = pedalValues[2];
 	
 	uint8_t data[4];
-	data[2] = throttle1 >> 8;
-	data[3] = throttle1 & 0xFF;
-	data[0] = brake >> 8;
-	data[1] = brake & 0xFF;
-	CANTx(0x100, 4, data);	
+	data[0] = throttle1 >> 8;
+	data[1] = throttle1 & 0xFF;
+	data[2] = brake >> 8;
+	data[3] = brake & 0xFF;
+	CANTx(CAN_MSG_PEDALS, 4, data);	
 
 
-	data[0] = rawSensorValues[1] >> 8;
+	/*data[0] = rawSensorValues[1] >> 8;
 	data[1] = rawSensorValues[1] & 0xFF;
-	CANTx(0x0FF, 2, data);	
+	CANTx(0x0FF, 2, data);*/
 }
 
 uint8_t processPedalPair(uint8_t pair, uint16_t sensorMin, uint16_t sensor, uint16_t sensorMax, uint16_t invertedMin, uint16_t inverted, uint16_t invertedMax){
@@ -232,5 +240,5 @@ void reportPedalImplausability(uint8_t pedalIdx){
 	
 	uint8_t data[1];
 	data[0] = pedalIdx;
-	CANTx(CAN_ERR_PEDAL_IMPLAUSIBILITY, 1, data);
+	CANTx(CAN_ERR_PEDALS_IMPLAUSIBILITY, 1, data);
 }
