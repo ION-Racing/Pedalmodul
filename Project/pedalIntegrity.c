@@ -38,12 +38,7 @@ void InitPedalIntegrity(void)
 			pedalCalibrationHigh[i] = *(int16_t *)(flashStartAddress + (1 + i*2 + 1) * 32);
 		}
 		
-		for(i=0; i<7; i++){
-			pedalCalibrationLow[i]  = 0x00;
-			pedalCalibrationHigh[i] = 0xFFF;
-		}
-		
-		sendCalibration();
+		//sendCalibration();
 	}
 	else {
 		// Needs calibration

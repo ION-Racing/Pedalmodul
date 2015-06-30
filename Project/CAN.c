@@ -106,13 +106,13 @@ void CAN1_RX0_IRQHandler (void){
 				case 2:
 					calibrateSensors(SENSOR_CALIBRATE_HIGH | SENSOR_CALIBRATE_BRAKE);
 					break;
-				case 3:
+				case 4:
 					calibrateSensors(SENSOR_CALIBRATE_LOW | SENSOR_CALIBRATE_STEERING);
 					break;
-				case 4:
+				case 5:
 					calibrateSensors(SENSOR_CALIBRATE_CENTER | SENSOR_CALIBRATE_STEERING);
 					break;
-				case 5:
+				case 6:
 					calibrateSensors(SENSOR_CALIBRATE_HIGH | SENSOR_CALIBRATE_STEERING);
 					break;
 
