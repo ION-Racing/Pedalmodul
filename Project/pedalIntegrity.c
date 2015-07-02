@@ -252,6 +252,9 @@ uint8_t processPedalPair(uint8_t pair, uint16_t sensorMin, uint16_t sensor, uint
 	if(a > 1.0f) a = 1.0;
 	if(a < 0.0f) a = 0.0;
 	
+	// 5% deadband
+	a = (a - 0.05f) / (1.0f - 0.05f);
+	
 	pedalValues[pair] = (uint16_t)(0xFFF * a);
 	
 	return PEDAL_STATE_OK;
