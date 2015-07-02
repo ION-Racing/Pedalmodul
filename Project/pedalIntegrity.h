@@ -1,6 +1,6 @@
 void InitPedalIntegrity(void);
 void processPedals(uint16_t rawSensorValues[6]);
-void reportPedalImplausability(uint8_t pedalIdx);
+void reportPedalImplausability(uint8_t pedalIdx, uint8_t pedalState);
 
 #define	SENSOR_INVERTED				((1<<2) | (1<<4) | (1<<6))
 
@@ -19,6 +19,10 @@ void reportPedalImplausability(uint8_t pedalIdx);
 #define	STEERING_CALIBRATE_MIN		0x101
 #define	STEERING_CALIBRATE_CENTER	0x201
 #define	STEERING_CALIBRATE_MAX		0x401
+
+#define	CALIBRATION_ERR_LOWER_BOUND	0x01
+#define	CALIBRATION_ERR_RANGE		0x02
+#define	CALIBRATION_ERR_UPPER_BOUND	0x04
 
 void calibrateSensors(uint16_t sensors);
 /*

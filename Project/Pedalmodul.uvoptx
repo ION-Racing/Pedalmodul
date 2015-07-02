@@ -201,9 +201,25 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>120</LineNumber>
+          <LineNumber>99</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134219104</Address>
+          <Address>134232490</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>.\CAN.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\GPIO\CAN.c\99</Expression>
+        </Bp>
+        <Bp>
+          <Number>1</Number>
+          <Type>0</Type>
+          <LineNumber>122</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134219108</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -212,12 +228,12 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\pedalIntegrity.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\GPIO\pedalIntegrity.c\120</Expression>
+          <Expression>\\GPIO\pedalIntegrity.c\122</Expression>
         </Bp>
         <Bp>
-          <Number>1</Number>
+          <Number>2</Number>
           <Type>0</Type>
-          <LineNumber>122</LineNumber>
+          <LineNumber>119</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -321,6 +337,11 @@
           <count>17</count>
           <WinNumber>1</WinNumber>
           <ItemText>calibrating</ItemText>
+        </Ww>
+        <Ww>
+          <count>18</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>msgRx</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>
