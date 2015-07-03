@@ -1,6 +1,8 @@
 #include "stm32f4xx_CAN.h"
 #include "stm32f4xx_gpio.h"
 #include "Periph_header.h"
+#include "pedalIntegrity.h"
+#include "ADC.h"
 
 #define CAN_RX_PIN GPIO_Pin_11
 #define CAN_TX_PIN GPIO_Pin_12
@@ -123,6 +125,11 @@ void CAN1_RX0_IRQHandler (void)
 		CAN_Receive(CAN1,CAN_FIFO0,&msgRx);
 
 		if(msgRx.StdId == 0x1) GPIOB->ODR ^= GPIO_Pin_14;
+		if(msgRx.StdId == 0x320) 
+		{
+			uint8_t i = msgRx.Data[0];			
+			setCalibratevariable(i);
+		}			
 
 	}
 }

@@ -2,13 +2,12 @@
 #include "CAN.h"
 #include "pedalIntegrity.h"
 
-//#define BUFFERSIZE 448  // Setter opp st¯rrelsen pÂ ADC array.
-#define BUFFERSIZE  (4+4)*8
+
 
 // ADC-values
 __IO uint16_t ADCDualConvertedValues[BUFFERSIZE];
+uint8_t calibrate;
 
-uint16_t rawSensorValues[7];
 
 void InitADC(void){
 	
@@ -32,18 +31,15 @@ void InitADC(void){
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	
 	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7 ;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7 | GPIO_Pin_8 ;
+	#ifdef USE_ALL_TORQUE_ENCODERS
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6;
+	#endif	
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	
-	
+	GPIO_Init(GPIOA, &GPIO_InitStructure);	
 	
 	
 	// Configure NVIC
@@ -108,24 +104,28 @@ void InitADC(void){
 	ADC_InitStructure.ADC_ExternalTrigConvEdge 	= ADC_ExternalTrigConvEdge_Rising;
 	ADC_InitStructure.ADC_ExternalTrigConv 		= ADC_ExternalTrigConv_T2_TRGO; // Trigger conversion with TIM2
 	ADC_InitStructure.ADC_DataAlign 			= ADC_DataAlign_Right;
-	ADC_InitStructure.ADC_NbrOfConversion 		= 4;
-	ADC_Init(ADC1, &ADC_InitStructure);
+
+	ADC_InitStructure.ADC_NbrOfConversion 		= N_SENSORS>>1;
 	
-	ADC_InitStructure.ADC_NbrOfConversion 		= 4;
+	ADC_Init(ADC1, &ADC_InitStructure);
 	ADC_Init(ADC2, &ADC_InitStructure); // Mirror on ADC2
 
-	/* ADC1 regular channel 11 configuration */
+	/* ADC1 ADC2 channel setup */
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 1, ADC_SampleTime_480Cycles); // PA2
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 2, ADC_SampleTime_480Cycles); // PA3
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_4, 3, ADC_SampleTime_480Cycles); // PA4
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 4, ADC_SampleTime_480Cycles); // PA1
-	
-	/* ADC2 regular channel 12 configuration */
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_5, 1, ADC_SampleTime_480Cycles); // PA5
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_6, 2, ADC_SampleTime_480Cycles); // PA6
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_7, 3, ADC_SampleTime_480Cycles); // PA7
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_8, 4, ADC_SampleTime_480Cycles); // PB0 (for equal lengths on both channels)
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_3, 1, ADC_SampleTime_480Cycles); // PA3
 
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_4, 2, ADC_SampleTime_480Cycles); // PA4
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_5, 2, ADC_SampleTime_480Cycles); // PA5
+
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 3, ADC_SampleTime_480Cycles); // PA1	
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_8, 3, ADC_SampleTime_480Cycles); // PA8 (for equal lengths on both channels)
+
+	#ifdef USE_ALL_TORQUE_ENCODERS
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_6, 4, ADC_SampleTime_480Cycles); // PA6
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_7, 4, ADC_SampleTime_480Cycles); // PA7
+	#endif
+	/****************************************************************************************/
+	
 	/* Enable DMA request after last transfer (Multi-ADC mode)  */
 	ADC_MultiModeDMARequestAfterLastTransferCmd(ENABLE);
 
@@ -160,6 +160,9 @@ void DMA2_Stream0_IRQHandler(void)
 	if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_TCIF0)){
 		DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);
 		
+		uint32_t rawSensorValues32[N_SENSORS-1] = {0};
+		uint16_t rawSensorValues[N_SENSORS-1] = {0};
+		/*
 		// Reorder ADC-values from DMA-buffer
 		rawSensorValues[0] = ADCDualConvertedValues[6];
 		rawSensorValues[1] = ADCDualConvertedValues[0];
@@ -170,8 +173,41 @@ void DMA2_Stream0_IRQHandler(void)
 		rawSensorValues[6] = ADCDualConvertedValues[5];
 		
 		processPedals(rawSensorValues);
+		*/
+		
+		/* Mortens kode: bruker 15-bit verdier*/
+		// integrating 64 samples of each sensor. Sum is a 18-bit value
+		for (uint8_t i = 0; i < N_SENSORS-1; i++)
+		{
+			#ifdef USE_ALL_TORQUE_ENCODERS
+			if (i == 5) i++; //empty slot when using
+			#endif
+			
+			for (uint8_t j = i; j < 64; j++)
+			{			
+				rawSensorValues32[i] += ADCDualConvertedValues[j*N_SENSORS];
+			}
+			// Converting 18-bit to 15-bit
+			rawSensorValues[i] = rawSensorValues32[i] >> 3;
+			//uninverting inverted encoders
+			#ifdef USE_ALL_TORQUE_ENCODERS
+			if (i == 1 || i == 3 || i == 7)	rawSensorValues[i] = 0x7FFF-rawSensorValues[i];
+			#else
+			if (i == 1 || i == 3)						rawSensorValues[i] = 0x7FFF-rawSensorValues[i];
+			#endif
+
+		}
+		
+		if (calibrate > 0) calibration(rawSensorValues, calibrate);
+		else processEncoders(rawSensorValues);
+		
 	}
 }
 
+void setCalibratevariable(uint8_t val)
+{
+	if (val<6) calibrate = val+1;
+	else calibrate = 0;
+}
 
 
