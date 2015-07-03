@@ -250,13 +250,36 @@ void calibration(uint16_t rawSensorValues[N_SENSORS-1], uint8_t calibrate)
 
 	if (calibratedSteeringRight && calibratedSteeringCenter && calibratedSteeringLeft 
 			&& calibratedBrakeMax && calibratedTorqueMax && calibratedPedalsMin)
-			{
-				//save calibration
-			}
+	{
+		CANTx(CAN_MSG_PEDALS_AND_STEERING_CALIBRATION_COMPLETE, 1, 0);
+		
+		//save calibration
+	}
 
 }
 
 void processEncoders(uint16_t rawSensorValues[N_SENSORS-1])
 {
+	//TODO: FINISH PROCESS OF ENCODERS WITH 15-bit value
+	
+	// Assuming all if's and but's are passed:
+	
+	uint8_t data[6];
+	data[0] = (rawSensorValues[0]-calibrationLow[0])>>8;
+	data[1] = (rawSensorValues[0]-calibrationLow[0]);	
+	data[2] = (rawSensorValues[2]-calibrationLow[2])>>8;
+	data[3] = (rawSensorValues[2]-calibrationLow[2]);	
+	if (rawSensorValues[4] > calibrationLow[5]) // Steering right
+	{		
+		data[4] = 1; 
+		data[5] = (int)(37*(rawSensorValues[4]-calibrationLow[5])/(calibrationHigh[4]-calibrationLow[5])+0.5);
+	}
+	else //steering left
+	{
+		data[4] = 0;
+		//calculating turn in degrees where 37 is the highest turn radius.
+		data[5] = (int)(37*(calibrationLow[5]-rawSensorValues[4])/(calibrationLow[5]-calibrationLow[4])+0.5);
+	}
+	
 	
 }

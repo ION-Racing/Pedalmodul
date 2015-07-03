@@ -14,4 +14,5 @@ void InitPedalIntegrity(void);
 void processPedals(uint16_t rawSensorValues[6]);
 void reportPedalImplausability(uint8_t pedalIdx);
 void startCalibration(void);
-void calibration(uint16_t rawSensorValues[N_SENSORS-1]);
+void calibration(uint16_t rawSensorValues[N_SENSORS-1], uint8_t calibrate);
+void processEncoders(uint16_t rawSensorValues[N_SENSORS-1]);
