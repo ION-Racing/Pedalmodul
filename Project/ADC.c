@@ -17,8 +17,8 @@ void InitADC(void){
 		Sensor			Pin		Pin function	 Sensor function
 		--------------------------------------------------------
 		Styresnekke		PA1		ADC123_IN1		 Steering
-		Pedalsensor 1	PA2		ADC123_IN2		 Throttle 1
-		Pedalsensor 2	PA3		ADC123_IN3		~Throttle 1
+		Pedalsensor 1	PA2		ADC123_IN2		~Throttle 1
+		Pedalsensor 2	PA3		ADC123_IN3		 Throttle 1
 		Pedalsensor 3	PA4		ADC12_IN4		 Throttle 2
 		Pedalsensor 4	PA5		ADC12_IN5		~Throttle 2
 		Pedalsensor 5	PA6		ADC12_IN6		 Brake
@@ -117,12 +117,12 @@ void InitADC(void){
 
 	/* ADC1 regular channel 11 configuration */
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_480Cycles); // PA1	
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_3, 2, ADC_SampleTime_480Cycles); // PA3
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 2, ADC_SampleTime_480Cycles); // PA2
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_5, 3, ADC_SampleTime_480Cycles); // PA5
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_7, 4, ADC_SampleTime_480Cycles); // PA7
 	
 	/* ADC2 regular channel 12 configuration */
-	ADC_RegularChannelConfig(ADC2, ADC_Channel_2, 1, ADC_SampleTime_480Cycles); // PA2
+	ADC_RegularChannelConfig(ADC2, ADC_Channel_3, 1, ADC_SampleTime_480Cycles); // PA3
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_4, 2, ADC_SampleTime_480Cycles); // PA4	
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_6, 3, ADC_SampleTime_480Cycles); // PA6	
 	ADC_RegularChannelConfig(ADC2, ADC_Channel_8, 4, ADC_SampleTime_480Cycles); // PB0 (for equal lengths on both channels)

@@ -212,17 +212,12 @@ void processPedals(uint16_t rawSensorValues[7]){
 	//uint16_t torque2 = pedalValues[1];
 	uint16_t brake 	   = pedalValues[2];
 	
-	uint8_t data[4];
+	uint8_t data[4];	
 	data[0] = torque1 >> 8;
 	data[1] = torque1 & 0xFF;
 	data[2] = brake >> 8;
 	data[3] = brake & 0xFF;
-	CANTx(CAN_MSG_PEDALS, 4, data);	
-
-
-	/*data[0] = rawSensorValues[1] >> 8;
-	data[1] = rawSensorValues[1] & 0xFF;
-	CANTx(0x0FF, 2, data);*/
+	CANTx(CAN_MSG_PEDALS, 4, data);
 }
 
 uint8_t processPedalPair(uint8_t pair, uint16_t sensorMin, uint16_t sensor, uint16_t sensorMax, uint16_t invertedMin, uint16_t inverted, uint16_t invertedMax){
